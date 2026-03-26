@@ -51,7 +51,7 @@
   /* Header */
   .header {
     background: var(--sage-dark);
-    padding: 20px 20px 16px;
+    padding: 18px 20px 14px;
     position: sticky;
     top: 0;
     z-index: 100;
@@ -59,22 +59,35 @@
   .header-top {
     display: flex;
     justify-content: space-between;
-    align-items: center;
+    align-items: flex-end;
     margin-bottom: 14px;
   }
+  .logo-wrap { display: flex; flex-direction: column; }
   .logo {
     font-family: 'Gowun Dodum', serif;
-    font-size: 18px;
+    font-size: 20px;
     color: #fff;
-    letter-spacing: 0.5px;
+    letter-spacing: 0.3px;
+    line-height: 1;
   }
   .logo span { color: var(--sage-light); }
+  .logo-sub {
+    font-family: 'Noto Sans KR', sans-serif;
+    font-size: 10px;
+    color: rgba(255,255,255,0.35);
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    margin-top: 5px;
+  }
   .today-badge {
-    font-size: 12px;
-    color: var(--sage-light);
-    background: rgba(255,255,255,0.1);
-    padding: 4px 10px;
+    font-size: 13px;
+    font-weight: 500;
+    color: rgba(255,255,255,0.9);
+    background: rgba(255,255,255,0.12);
+    padding: 5px 12px;
     border-radius: 20px;
+    border: 1px solid rgba(255,255,255,0.15);
+    line-height: 1;
   }
 
   /* Tabs */
@@ -611,7 +624,10 @@
 
 <div class="header">
   <div class="header-top">
-    <div class="logo">가히의 <span>다이어트</span> 트래커</div>
+    <div class="logo-wrap">
+      <div class="logo">가히의 <span>다이어트</span> 트래커</div>
+      <div class="logo-sub">Diet Tracker</div>
+    </div>
     <div class="today-badge" id="todayBadge"></div>
   </div>
   <div class="tabs">
@@ -924,8 +940,17 @@ function formatDate(d) {
 }
 function koreanDate(d) {
   const days = ['일','월','화','수','목','금','토'];
-  const date = d instanceof Date ? d : new Date(d + 'T00:00:00');
-  return `${date.getMonth()+1}월 ${date.getDate()}일 (${days[date.getDay()]})`;
+  let date;
+  if (d instanceof Date) {
+    date = d;
+  } else if (typeof d === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(d)) {
+    const [y,m,day] = d.split('-').map(Number);
+    date = new Date(y, m-1, day);
+  } else {
+    date = new Date(d);
+  }
+  if (isNaN(date.getTime())) return String(d);
+  return date.getMonth()+1 + '월 ' + date.getDate() + '일 (' + days[date.getDay()] + ')';
 }
 
 // ═══════════════════════════════════════════
@@ -933,7 +958,7 @@ function koreanDate(d) {
 // ═══════════════════════════════════════════
 function init() {
   // Header date
-  document.getElementById('todayBadge').textContent = `${today.getMonth()+1}/${today.getDate()}`;
+  document.getElementById('todayBadge').textContent = (today.getMonth()+1) + '월 ' + today.getDate() + '일';
   document.getElementById('recordDate').textContent = koreanDate(today);
   const weekdays = ['일요일','월요일','화요일','수요일','목요일','금요일','토요일'];
   document.getElementById('recordDateSub').textContent = `${today.getFullYear()}년 · ${weekdays[today.getDay()]}`;
