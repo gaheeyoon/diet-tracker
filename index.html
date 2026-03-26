@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>가히의 다이어트 트래커</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Gowun+Dodum&family=Noto+Sans+KR:wght@300;400;500;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700&display=swap" rel="stylesheet">
 <style>
   :root {
     --sage: #7C9A7E;
@@ -61,11 +61,10 @@
     justify-content: space-between;
     align-items: flex-end;
     margin-bottom: 14px;
-    margin-top: 16px;
   }
   .logo-wrap { display: flex; flex-direction: column; }
   .logo {
-    font-family: 'Gowun Dodum', serif;
+    font-family: 'Noto Sans KR', sans-serif;
     font-size: 20px;
     color: #fff;
     letter-spacing: 0.3px;
@@ -137,6 +136,13 @@
     color: #fff;
     position: relative;
     overflow: hidden;
+  }
+  /* weight-card 안에서 입력 + kg + 전날비교를 가로로 배치 */
+  .weight-card-inner {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    flex-wrap: wrap;
   }
   .weight-card::before {
     content: '';
@@ -609,6 +615,116 @@
     margin-bottom: 10px;
   }
 
+  /* Date navigator */
+  .date-nav {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 4px 4px;
+    gap: 8px;
+    margin-bottom: 12px;
+  }
+  .date-nav-btn {
+    width: 36px; height: 36px;
+    border-radius: 50%;
+    border: none;
+    background: rgba(124,154,126,0.12);
+    color: var(--sage-dark);
+    font-size: 16px;
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    transition: all 0.15s;
+    flex-shrink: 0;
+  }
+  .date-nav-btn:hover { background: rgba(124,154,126,0.22); }
+  .date-nav-btn:active { transform: scale(0.92); }
+  .date-nav-btn:disabled { opacity: 0.25; cursor: default; }
+  .date-nav-center { flex: 1; text-align: center; }
+  .date-nav-main {
+    font-size: 22px;
+    font-weight: 700;
+    color: var(--sage-dark);
+    line-height: 1.2;
+    font-family: 'Noto Sans KR', sans-serif;
+  }
+  .date-nav-today-badge {
+    display: inline-block;
+    font-size: 10px;
+    font-weight: 500;
+    color: var(--sage-dark);
+    background: var(--sage-pale);
+    padding: 2px 8px;
+    border-radius: 10px;
+    margin-top: 5px;
+  }
+
+  /* Water card */
+  .water-card {
+    background: #fff;
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    padding: 14px 16px;
+    margin-bottom: 16px;
+  }
+  .water-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 12px;
+  }
+  .water-emoji { font-size: 22px; flex-shrink: 0; }
+  .water-progress-wrap { flex: 1; }
+  .water-bar-track {
+    background: var(--sage-pale);
+    border-radius: 6px;
+    height: 8px;
+    overflow: hidden;
+    margin-bottom: 4px;
+  }
+  .water-bar-fill {
+    height: 100%;
+    border-radius: 6px;
+    background: linear-gradient(90deg, var(--sage-light), var(--sage));
+    width: 0%;
+    transition: width 0.3s ease;
+  }
+  .water-amount-label {
+    font-size: 12px;
+    color: var(--text-light);
+    text-align: right;
+  }
+  .water-amount-label span { font-weight: 700; color: var(--sage-dark); }
+  .water-btns {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 8px;
+    margin-bottom: 8px;
+  }
+  .water-btn {
+    background: var(--sage-pale);
+    border: 2px solid var(--sage-light);
+    border-radius: 10px;
+    color: var(--sage-dark);
+    font-family: 'Noto Sans KR', sans-serif;
+    font-size: 13px;
+    font-weight: 500;
+    padding: 10px 0;
+    cursor: pointer;
+    transition: all 0.15s;
+    text-align: center;
+  }
+  .water-btn.filled {
+    background: var(--sage);
+    border-color: var(--sage);
+    color: #fff;
+  }
+  .water-btn:active { transform: scale(0.95); }
+  .water-hint {
+    font-size: 11px;
+    color: var(--text-light);
+    text-align: center;
+  }
+
   @media (min-width: 561px) {
     body { background: #E8EDE8; }
   }
@@ -629,10 +745,9 @@
       <div class="logo">가히의 <span>다이어트</span> 트래커</div>
       <div class="logo-sub">Diet Tracker</div>
     </div>
-    <div class="today-badge" id="todayBadge"></div>
   </div>
   <div class="tabs">
-    <button class="tab-btn active" onclick="switchTab('record')">✏️ 오늘 기록</button>
+    <button class="tab-btn active" onclick="switchTab('record')">✏️ 기록</button>
     <button class="tab-btn" onclick="switchTab('history')">📊 기록 확인</button>
     <button class="tab-btn" onclick="switchTab('diet')">🥗 식단표</button>
     <button class="tab-btn" onclick="switchTab('settings')">⚙️</button>
@@ -643,10 +758,15 @@
 
   <!-- ════ TAB 1: 오늘 기록 ════ -->
   <div class="tab-panel active" id="tab-record">
-    <div class="date-header">
-      <div class="date-main" id="recordDate"></div>
-      <div class="date-sub" id="recordDateSub"></div>
+    <!-- 날짜 네비게이터 -->
+    <div class="date-nav">
+      <button class="date-nav-btn" onclick="shiftDate(-1)">&#8592;</button>
+      <div class="date-nav-center">
+        <div class="date-nav-main" id="recordDate"></div>
+      </div>
+      <button class="date-nav-btn" onclick="shiftDate(1)" id="dateNavNext">&#8594;</button>
     </div>
+    <div style="height:4px"></div>
 
     <!-- Weight -->
     <div class="weight-card">
@@ -679,7 +799,7 @@
       </div>
     </div>
 
-    <!-- 생활 체크 -->
+    <!-- 운동 체크 -->
     <div class="section-title">생활 수칙</div>
     <div class="check-card">
       <div class="check-item" onclick="toggleCheck('exercise')" id="check-exercise">
@@ -693,17 +813,27 @@
           <div class="sub">빨리 걷기, 런닝 등</div>
         </div>
       </div>
-      <div class="check-item" onclick="toggleCheck('water')" id="check-water">
-        <div class="check-box">
-          <svg width="12" height="9" viewBox="0 0 12 9" fill="none">
-            <path d="M1 4L4.5 7.5L11 1" stroke="white" stroke-width="2" stroke-linecap="round"/>
-          </svg>
-        </div>
-        <div class="check-text">
-          <div class="main">💧 물 2L 이상</div>
-          <div class="sub">커피 오전 1잔만</div>
+    </div>
+
+    <!-- 물 섭취 -->
+    <div class="section-title">물 섭취</div>
+    <div class="water-card">
+      <div class="water-header">
+        <span class="water-emoji">💧</span>
+        <div class="water-progress-wrap">
+          <div class="water-bar-track">
+            <div class="water-bar-fill" id="waterBarFill"></div>
+          </div>
+          <div class="water-amount-label"><span id="waterAmount">0</span> / 2,000 ml</div>
         </div>
       </div>
+      <div class="water-btns">
+        <button class="water-btn" id="wbtn1" onclick="addWater(1)">+500ml</button>
+        <button class="water-btn" id="wbtn2" onclick="addWater(2)">+500ml</button>
+        <button class="water-btn" id="wbtn3" onclick="addWater(3)">+500ml</button>
+        <button class="water-btn" id="wbtn4" onclick="addWater(4)">+500ml</button>
+      </div>
+      <div class="water-hint">버튼을 탭해서 500ml씩 기록 · 다시 탭하면 취소</div>
     </div>
 
     <!-- 수면 -->
@@ -730,7 +860,7 @@
 
     <!-- Save -->
     <button class="save-btn" id="saveBtn" onclick="saveRecord()">
-      <span id="saveBtnText">오늘 기록 저장하기</span>
+      <span id="saveBtnText">기록 저장하기</span>
       <div class="spinner" id="saveSpinner"></div>
     </button>
   </div>
@@ -933,6 +1063,12 @@ let weightChart = null;
 const today = new Date();
 const todayKey = formatDate(today);
 
+// 현재 편집 중인 날짜 (오늘 or 어제)
+let currentDateKey = todayKey;
+
+// 물 섭취 카운트 (500ml 단위, 최대 4)
+let waterCount = 0;
+
 // ═══════════════════════════════════════════
 // DATE UTILS
 // ═══════════════════════════════════════════
@@ -957,40 +1093,122 @@ function koreanDate(d) {
 // ═══════════════════════════════════════════
 // INIT
 // ═══════════════════════════════════════════
-function init() {
-  // Header date
-  document.getElementById('todayBadge').textContent = (today.getMonth()+1) + '월 ' + today.getDate() + '일';
-  document.getElementById('recordDate').textContent = koreanDate(today);
-  const weekdays = ['일요일','월요일','화요일','수요일','목요일','금요일','토요일'];
-  document.getElementById('recordDateSub').textContent = `${today.getFullYear()}년 · ${weekdays[today.getDay()]}`;
+async function init() {
+  currentDateKey = todayKey;
 
-  // Load today's record if exists
-  const rec = records[todayKey];
-  if (rec) {
-    if (rec.weight) document.getElementById('weightInput').value = rec.weight;
-    if (rec.sleep) document.getElementById('sleepInput').value = rec.sleep;
-    if (rec.memo) document.getElementById('memoInput').value = rec.memo;
-    if (rec.meals) rec.meals.forEach(m => {
-      if (m) document.getElementById(`meal-${rec.meals.indexOf(m)+1}`)?.classList.add('checked');
-    });
-    // meals stored as array of booleans
-    if (rec.meal1) document.getElementById('meal-1').classList.add('checked');
-    if (rec.meal2) document.getElementById('meal-2').classList.add('checked');
-    if (rec.meal3) document.getElementById('meal-3').classList.add('checked');
-    if (rec.meal4) document.getElementById('meal-4').classList.add('checked');
-    if (rec.exercise) document.getElementById('check-exercise').classList.add('checked');
-    if (rec.water) document.getElementById('check-water').classList.add('checked');
-  }
-
-  // Weight diff
-  updateWeightDiff();
-
-  // Settings
+  // Settings UI
   document.getElementById('scriptUrl').value = settings.scriptUrl || '';
   document.getElementById('userName').value = settings.userName || '가히';
-
-  // Apps script code
   document.getElementById('appsScriptCode').textContent = getAppsScriptCode();
+
+  // Sheets에서 전체 기록 fetch (설정된 경우)
+  await fetchAllRecords();
+
+  // 오늘 날짜 로드
+  loadRecord(todayKey);
+
+  // Weight diff listener
+  updateWeightDiff();
+}
+
+// ─────────────────────────────────────────────
+// Sheets에서 전체 기록 fetch → records 갱신
+// ─────────────────────────────────────────────
+async function fetchAllRecords() {
+  if (!settings.scriptUrl) return;
+  try {
+    const res = await fetch(settings.scriptUrl, { method: 'GET' });
+    const json = await res.json();
+    if (json.ok && json.records && Object.keys(json.records).length > 0) {
+      // Sheets 데이터 우선 병합 (로컬보다 Sheets가 진실의 원천)
+      records = Object.assign({}, records, json.records);
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(records));
+    }
+  } catch(e) {
+    // 네트워크 오류 시 로컬 데이터 유지
+  }
+}
+
+// ─────────────────────────────────────────────
+// 화살표 날짜 이동
+// ─────────────────────────────────────────────
+function shiftDate(delta) {
+  const [y,m,d] = currentDateKey.split('-').map(Number);
+  const next = new Date(y, m-1, d + delta);
+  const nextKey = formatDate(next);
+
+  // 미래는 오늘까지만 허용
+  if (nextKey > todayKey) return;
+
+  currentDateKey = nextKey;
+  loadRecord(currentDateKey);
+}
+
+// ─────────────────────────────────────────────
+// 특정 날짜 기록 폼에 로드
+// ─────────────────────────────────────────────
+function loadRecord(dateKey) {
+  // 날짜 네비게이터 업데이트
+  const isToday = dateKey === todayKey;
+  const dateLabel = koreanDate(dateKey);
+  const centerEl = document.getElementById('recordDate');
+  centerEl.innerHTML = dateLabel +
+    (isToday ? '<div class="date-nav-today-badge">오늘</div>' : '');
+
+  // 다음 버튼 비활성화 (오늘이면)
+  const nextBtn = document.getElementById('dateNavNext');
+  if (nextBtn) nextBtn.disabled = isToday;
+
+  // 폼 초기화
+  document.getElementById('weightInput').value = '';
+  document.getElementById('sleepInput').value = '';
+  document.getElementById('memoInput').value = '';
+  ['meal-1','meal-2','meal-3','meal-4'].forEach(id =>
+    document.getElementById(id).classList.remove('checked'));
+  document.getElementById('check-exercise').classList.remove('checked');
+  waterCount = 0;
+  updateWaterUI();
+
+  // 저장된 기록 있으면 채우기
+  const rec = records[dateKey];
+  if (rec) {
+    if (rec.weight)   document.getElementById('weightInput').value = rec.weight;
+    if (rec.sleep)    document.getElementById('sleepInput').value = rec.sleep;
+    if (rec.memo)     document.getElementById('memoInput').value = rec.memo;
+    if (rec.meal1)    document.getElementById('meal-1').classList.add('checked');
+    if (rec.meal2)    document.getElementById('meal-2').classList.add('checked');
+    if (rec.meal3)    document.getElementById('meal-3').classList.add('checked');
+    if (rec.meal4)    document.getElementById('meal-4').classList.add('checked');
+    if (rec.exercise) document.getElementById('check-exercise').classList.add('checked');
+    waterCount = typeof rec.waterCount === 'number' ? rec.waterCount
+               : (rec.water ? 4 : 0);
+    updateWaterUI();
+  }
+}
+
+// ─────────────────────────────────────────────
+// 물 버튼 로직
+// ─────────────────────────────────────────────
+function addWater(n) {
+  // 탭한 버튼이 이미 채워진 마지막 버튼이면 → 그 버튼부터 취소
+  if (waterCount === n) {
+    waterCount = n - 1;
+  } else {
+    waterCount = n;
+  }
+  updateWaterUI();
+  playTick();
+}
+
+function updateWaterUI() {
+  for (let i = 1; i <= 4; i++) {
+    const btn = document.getElementById('wbtn' + i);
+    if (btn) btn.classList.toggle('filled', i <= waterCount);
+  }
+  const fill = document.getElementById('waterBarFill');
+  const label = document.getElementById('waterAmount');
+  if (fill) fill.style.width = (waterCount * 25) + '%';
+  if (label) label.textContent = (waterCount * 500).toLocaleString();
 }
 
 // ═══════════════════════════════════════════
@@ -1021,7 +1239,7 @@ function updateWeightDiff() {
     if (!val) { document.getElementById('weightDiff').textContent = ''; return; }
     // find prev day
     const sorted = Object.keys(records).sort().reverse();
-    const prev = sorted.find(k => k < todayKey && records[k].weight);
+    const prev = sorted.find(k => k < currentDateKey && records[k].weight);
     if (prev && records[prev].weight) {
       const diff = (val - records[prev].weight).toFixed(1);
       const el = document.getElementById('weightDiff');
@@ -1040,26 +1258,30 @@ function updateWeightDiff() {
 // SAVE
 // ═══════════════════════════════════════════
 async function saveRecord() {
-  const weight = parseFloat(document.getElementById('weightInput').value) || null;
-  const sleep = parseFloat(document.getElementById('sleepInput').value) || null;
-  const memo = document.getElementById('memoInput').value.trim();
-  const meal1 = document.getElementById('meal-1').classList.contains('checked');
-  const meal2 = document.getElementById('meal-2').classList.contains('checked');
-  const meal3 = document.getElementById('meal-3').classList.contains('checked');
-  const meal4 = document.getElementById('meal-4').classList.contains('checked');
+  const weight   = parseFloat(document.getElementById('weightInput').value) || null;
+  const sleep    = parseFloat(document.getElementById('sleepInput').value)  || null;
+  const memo     = document.getElementById('memoInput').value.trim();
+  const meal1    = document.getElementById('meal-1').classList.contains('checked');
+  const meal2    = document.getElementById('meal-2').classList.contains('checked');
+  const meal3    = document.getElementById('meal-3').classList.contains('checked');
+  const meal4    = document.getElementById('meal-4').classList.contains('checked');
   const exercise = document.getElementById('check-exercise').classList.contains('checked');
-  const water = document.getElementById('check-water').classList.contains('checked');
+  const water    = waterCount >= 4;   // 2L 달성 여부 (Sheets 호환)
 
-  const rec = { weight, sleep, memo, meal1, meal2, meal3, meal4, exercise, water, savedAt: new Date().toISOString() };
+  const rec = {
+    weight, sleep, memo, meal1, meal2, meal3, meal4,
+    exercise, water, waterCount,  // waterCount = 0~4
+    savedAt: new Date().toISOString()
+  };
 
-  // Save locally always
-  records[todayKey] = rec;
+  // 로컬 저장 (currentDateKey 기준)
+  records[currentDateKey] = rec;
   localStorage.setItem(STORAGE_KEY, JSON.stringify(records));
 
-  // Try to sync to Google Sheets
+  // Google Sheets 동기화
   if (settings.scriptUrl) {
-    const btn = document.getElementById('saveBtn');
-    const txt = document.getElementById('saveBtnText');
+    const btn  = document.getElementById('saveBtn');
+    const txt  = document.getElementById('saveBtnText');
     const spin = document.getElementById('saveSpinner');
     btn.disabled = true;
     txt.style.display = 'none';
@@ -1067,7 +1289,7 @@ async function saveRecord() {
 
     try {
       const payload = {
-        date: todayKey,
+        date: currentDateKey,
         name: settings.userName || '가히',
         weight: weight || '',
         meal1: meal1 ? 'O' : 'X',
@@ -1075,7 +1297,7 @@ async function saveRecord() {
         meal3: meal3 ? 'O' : 'X',
         meal4: meal4 ? 'O' : 'X',
         exercise: exercise ? 'O' : 'X',
-        water: water ? 'O' : 'X',
+        water: waterCount * 500 + 'ml / 2000ml',
         sleep: sleep || '',
         memo: memo
       };
@@ -1085,7 +1307,8 @@ async function saveRecord() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
       });
-      showToast('✅ 저장 완료! 선생님께도 전송됐어요');
+      const label = currentDateKey === todayKey ? '오늘' : '어제';
+      showToast('✅ ' + label + ' 기록 저장됐어요!');
     } catch(e) {
       showToast('📱 로컬 저장됨 (네트워크 오류)');
     }
@@ -1095,7 +1318,8 @@ async function saveRecord() {
     btn.classList.add('saved');
     setTimeout(() => btn.classList.remove('saved'), 2000);
   } else {
-    showToast('✅ 로컬에 저장됐어요!');
+    const label = currentDateKey === todayKey ? '오늘' : '어제';
+    showToast('✅ ' + label + ' 기록 저장됐어요!');
     document.getElementById('saveBtn').classList.add('saved');
     setTimeout(() => document.getElementById('saveBtn').classList.remove('saved'), 2000);
   }
@@ -1116,7 +1340,8 @@ function switchTab(name) {
 // ═══════════════════════════════════════════
 // HISTORY
 // ═══════════════════════════════════════════
-function renderHistory() {
+async function renderHistory() {
+  await fetchAllRecords();
   const sorted = Object.keys(records).sort().reverse();
   if (!sorted.length) return;
 
@@ -1189,7 +1414,7 @@ function renderHistory() {
         <div class="progress-bar-wrap">
           <div class="progress-bar-fill" style="width:${pct}%"></div>
         </div>
-        <div class="progress-label">식단 ${doneMeals}/4 · ${r.exercise?'운동 ✓':'운동 ✗'} · ${r.water?'물 ✓':'물 ✗'} · 수면 ${r.sleep||'-'}h</div>
+        <div class="progress-label">식단 ${doneMeals}/4 · ${r.exercise?'운동 ✓':'운동 ✗'} · 💧${(typeof r.waterCount==='number'?r.waterCount*500:(r.water?2000:0)).toLocaleString()}ml · 수면 ${r.sleep||'-'}h</div>
       </div>
     `;
   }).join('');
