@@ -1211,14 +1211,14 @@ function saveSettings() {
 // APPS SCRIPT CODE
 // ═══════════════════════════════════════════
 function getAppsScriptCode() {
-  return `function doPost(e) {
+  return `// ── 저장 (가히님 앱 → Sheets) ──────────────
+function doPost(e) {
   try {
     var data = JSON.parse(e.postData.contents);
     var ss = SpreadsheetApp.getActiveSpreadsheet();
-    var sheet = ss.getSheetByName('기록') 
+    var sheet = ss.getSheetByName('기록')
                || ss.insertSheet('기록');
-    
-    // 헤더 없으면 추가
+
     if (sheet.getLastRow() === 0) {
       sheet.appendRow([
         '날짜','이름','체중',
@@ -1226,16 +1226,15 @@ function getAppsScriptCode() {
         '운동','물','수면','메모'
       ]);
     }
-    
-    // 기존 날짜 있으면 업데이트
+
     var found = false;
     var rows = sheet.getDataRange().getValues();
     for (var i = 1; i < rows.length; i++) {
-      if (rows[i][0] === data.date && 
+      if (rows[i][0] === data.date &&
           rows[i][1] === data.name) {
-        sheet.getRange(i+1, 1, 1, 11).setValues([[
+        sheet.getRange(i+1,1,1,11).setValues([[
           data.date, data.name, data.weight,
-          data.meal1, data.meal2, 
+          data.meal1, data.meal2,
           data.meal3, data.meal4,
           data.exercise, data.water,
           data.sleep, data.memo
@@ -1253,7 +1252,7 @@ function getAppsScriptCode() {
         data.sleep, data.memo
       ]);
     }
-    
+
     return ContentService
       .createTextOutput(JSON.stringify({ok:true}))
       .setMimeType(ContentService.MimeType.JSON);
@@ -1264,10 +1263,44 @@ function getAppsScriptCode() {
   }
 }
 
+// ── 조회 (선생님 뷰 → Sheets) ──────────────
 function doGet(e) {
-  return ContentService
-    .createTextOutput("Diet Tracker API")
-    .setMimeType(ContentService.MimeType.TEXT);
+  try {
+    var ss = SpreadsheetApp.getActiveSpreadsheet();
+    var sheet = ss.getSheetByName('기록');
+    if (!sheet || sheet.getLastRow() <= 1) {
+      return ContentService
+        .createTextOutput(JSON.stringify({ok:true,records:{}}))
+        .setMimeType(ContentService.MimeType.JSON);
+    }
+
+    var rows = sheet.getDataRange().getValues();
+    var result = {};
+    for (var i = 1; i < rows.length; i++) {
+      var r = rows[i];
+      if (!r[0]) continue;
+      var key = r[0];
+      result[key] = {
+        weight: r[2] || null,
+        meal1:  r[3] === 'O',
+        meal2:  r[4] === 'O',
+        meal3:  r[5] === 'O',
+        meal4:  r[6] === 'O',
+        exercise: r[7] === 'O',
+        water:  r[8] === 'O',
+        sleep:  r[9] || null,
+        memo:   r[10] || ''
+      };
+    }
+
+    return ContentService
+      .createTextOutput(JSON.stringify({ok:true,records:result}))
+      .setMimeType(ContentService.MimeType.JSON);
+  } catch(err) {
+    return ContentService
+      .createTextOutput(JSON.stringify({ok:false,error:err.toString()}))
+      .setMimeType(ContentService.MimeType.JSON);
+  }
 }`;
 }
 
@@ -1299,32 +1332,70 @@ function showToast(msg) {
 // ═══════════════════════════════════════════
 const urlParams = new URLSearchParams(window.location.search);
 const isTeacherView = urlParams.get('view') === 'teacher';
+// scriptUrl은 가히님이 공유할 때 파라미터로 포함됨
+const teacherScriptUrl = urlParams.get('api') ? decodeURIComponent(urlParams.get('api')) : '';
 
-function initTeacherView() {
+async function initTeacherView() {
   if (!isTeacherView) return;
 
-  // Hide record/diet/settings tabs, show only history
+  // 탭 숨김 (기록/식단/설정)
   document.querySelectorAll('.tab-btn').forEach(btn => btn.style.display = 'none');
 
-  // Add teacher banner above header content
+  // 배너 추가
   const headerTop = document.querySelector('.header-top');
   const banner = document.createElement('div');
   banner.className = 'teacher-banner';
   banner.textContent = '👩‍🏫 선생님 전용 보기 — 읽기 전용';
   document.querySelector('.header').insertBefore(banner, headerTop);
 
-  // Change logo text
+  // 로고 변경
   document.querySelector('.logo').innerHTML = '가히의 <span>다이어트</span> 기록';
 
-  // Switch to history tab
+  // 기록 탭 활성화
   document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
   document.getElementById('tab-history').classList.add('active');
-  renderHistory();
+
+  // Sheets에서 데이터 fetch
+  if (teacherScriptUrl) {
+    const listEl = document.getElementById('historyList');
+    listEl.innerHTML = `<div style="text-align:center;padding:40px 0;color:var(--text-light);font-size:13px;">
+      <div style="margin-bottom:8px;">📡 데이터 불러오는 중...</div>
+    </div>`;
+
+    try {
+      const res = await fetch(teacherScriptUrl, { method: 'GET' });
+      const json = await res.json();
+      if (json.ok && json.records) {
+        records = json.records;
+        renderHistory();
+      } else {
+        listEl.innerHTML = `<div style="text-align:center;padding:40px 0;color:#E07070;font-size:13px;">데이터를 불러오지 못했어요.<br>Apps Script 배포 설정을 확인해주세요.</div>`;
+      }
+    } catch(err) {
+      // CORS 이슈 시 no-cors로 재시도 불가(응답 못 읽음) → 안내 메시지
+      listEl.innerHTML = `<div style="text-align:center;padding:40px 0;color:#E07070;font-size:13px;">
+        데이터 로드 실패<br>
+        <span style="font-size:11px;color:var(--text-light)">Apps Script 배포 시 액세스: "모든 사람"으로 설정했는지 확인해주세요</span>
+      </div>`;
+    }
+  } else {
+    // scriptUrl 없을 때 — 링크 파라미터 누락 안내
+    document.getElementById('historyList').innerHTML = `<div style="text-align:center;padding:40px 0;color:var(--text-light);font-size:13px;">
+      ⚠️ 링크가 올바르지 않아요.<br>
+      <span style="font-size:11px;">가히님께 공유 링크를 다시 받아주세요.</span>
+    </div>`;
+  }
 }
 
 function copyTeacherLink() {
+  const scriptUrl = settings.scriptUrl;
+  if (!scriptUrl) {
+    showToast('⚠️ 먼저 Apps Script URL을 설정해주세요!');
+    return;
+  }
   const base = window.location.href.split('?')[0];
-  const link = base + '?view=teacher';
+  // scriptUrl을 인코딩해서 파라미터로 포함
+  const link = `${base}?view=teacher&api=${encodeURIComponent(scriptUrl)}`;
   navigator.clipboard.writeText(link).then(() => {
     showToast('🔗 선생님 링크 복사됨!');
   }).catch(() => {
