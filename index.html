@@ -1,0 +1,1253 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>가히의 다이어트 트래커</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Gowun+Dodum&family=Noto+Sans+KR:wght@300;400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --sage: #7C9A7E;
+    --sage-light: #B8D4BA;
+    --sage-pale: #EBF3EB;
+    --sage-dark: #4A6B4C;
+    --cream: #FAF8F3;
+    --warm-white: #F5F2EC;
+    --text-dark: #2C3E2D;
+    --text-mid: #5A6B5B;
+    --text-light: #8FA690;
+    --accent: #E8A598;
+    --accent-light: #FDECEA;
+    --warn: #E5C07B;
+    --warn-light: #FDF6E3;
+    --border: rgba(124,154,126,0.2);
+    --border-strong: rgba(124,154,126,0.4);
+    --shadow: 0 2px 16px rgba(74,107,76,0.08);
+    --radius: 16px;
+    --radius-sm: 10px;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html { font-size: 15px; -webkit-tap-highlight-color: transparent; }
+  body {
+    font-family: 'Noto Sans KR', sans-serif;
+    background: var(--cream);
+    color: var(--text-dark);
+    min-height: 100vh;
+    padding-bottom: 80px;
+  }
+
+  /* Header */
+  .header {
+    background: var(--sage-dark);
+    padding: 20px 20px 16px;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+  .header-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 14px;
+  }
+  .logo {
+    font-family: 'Gowun Dodum', serif;
+    font-size: 18px;
+    color: #fff;
+    letter-spacing: 0.5px;
+  }
+  .logo span { color: var(--sage-light); }
+  .today-badge {
+    font-size: 12px;
+    color: var(--sage-light);
+    background: rgba(255,255,255,0.1);
+    padding: 4px 10px;
+    border-radius: 20px;
+  }
+
+  /* Tabs */
+  .tabs {
+    display: flex;
+    gap: 4px;
+  }
+  .tab-btn {
+    flex: 1;
+    background: rgba(255,255,255,0.1);
+    border: none;
+    color: rgba(255,255,255,0.6);
+    font-family: 'Noto Sans KR', sans-serif;
+    font-size: 13px;
+    padding: 8px 4px;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .tab-btn.active {
+    background: rgba(255,255,255,0.95);
+    color: var(--sage-dark);
+    font-weight: 500;
+  }
+
+  /* Content */
+  .content { padding: 16px; }
+  .tab-panel { display: none; }
+  .tab-panel.active { display: block; }
+
+  /* ─── TAB 1: 오늘 기록 ─── */
+  .date-header {
+    text-align: center;
+    padding: 16px 0 8px;
+    margin-bottom: 16px;
+  }
+  .date-main { font-size: 22px; font-weight: 700; color: var(--sage-dark); }
+  .date-sub { font-size: 13px; color: var(--text-light); margin-top: 2px; }
+
+  /* Weight input */
+  .weight-card {
+    background: var(--sage-dark);
+    border-radius: var(--radius);
+    padding: 20px;
+    margin-bottom: 16px;
+    color: #fff;
+    position: relative;
+    overflow: hidden;
+  }
+  .weight-card::before {
+    content: '';
+    position: absolute;
+    right: -20px; top: -20px;
+    width: 100px; height: 100px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.06);
+  }
+  .weight-label { font-size: 12px; color: var(--sage-light); margin-bottom: 10px; letter-spacing: 0.5px; }
+  .weight-input-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .weight-input {
+    background: rgba(255,255,255,0.15);
+    border: 1.5px solid rgba(255,255,255,0.3);
+    border-radius: 10px;
+    color: #fff;
+    font-size: 28px;
+    font-weight: 700;
+    width: 120px;
+    padding: 6px 12px;
+    font-family: 'Noto Sans KR', sans-serif;
+    outline: none;
+  }
+  .weight-input::placeholder { color: rgba(255,255,255,0.3); }
+  .weight-input:focus { border-color: rgba(255,255,255,0.7); }
+  .weight-unit { font-size: 18px; color: var(--sage-light); }
+  .weight-diff {
+    margin-top: 8px;
+    font-size: 13px;
+    color: var(--sage-light);
+  }
+  .weight-diff .diff-val { font-weight: 500; }
+  .diff-up { color: #FF8A80; }
+  .diff-down { color: #A5D6A7; }
+
+  /* Section */
+  .section-title {
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--text-light);
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    margin-bottom: 10px;
+    padding-left: 2px;
+  }
+
+  /* Check items */
+  .check-card {
+    background: #fff;
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    margin-bottom: 16px;
+    overflow: hidden;
+  }
+  .check-item {
+    display: flex;
+    align-items: center;
+    padding: 14px 16px;
+    border-bottom: 1px solid var(--border);
+    cursor: pointer;
+    transition: background 0.15s;
+    user-select: none;
+    -webkit-user-select: none;
+  }
+  .check-item:last-child { border-bottom: none; }
+  .check-item:active { background: var(--sage-pale); }
+  .check-item.checked { background: var(--sage-pale); }
+
+  .check-box {
+    width: 24px; height: 24px;
+    border-radius: 50%;
+    border: 2px solid var(--sage-light);
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+    transition: all 0.2s;
+    margin-right: 12px;
+  }
+  .check-item.checked .check-box {
+    background: var(--sage);
+    border-color: var(--sage);
+  }
+  .check-box svg { display: none; }
+  .check-item.checked .check-box svg { display: block; }
+
+  .check-text { flex: 1; }
+  .check-text .main { font-size: 14px; color: var(--text-dark); }
+  .check-text .sub { font-size: 12px; color: var(--text-light); margin-top: 1px; }
+  .check-item.checked .check-text .main { color: var(--text-mid); }
+
+  /* Meal section */
+  .meal-check-item {
+    display: flex;
+    align-items: center;
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--border);
+    cursor: pointer;
+    transition: background 0.15s;
+    user-select: none;
+    -webkit-user-select: none;
+  }
+  .meal-check-item:last-child { border-bottom: none; }
+  .meal-check-item:active { background: var(--sage-pale); }
+  .meal-check-item.checked { background: var(--sage-pale); }
+  .meal-num {
+    width: 24px; height: 24px;
+    border-radius: 50%;
+    background: var(--sage-pale);
+    border: 2px solid var(--sage-light);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--sage-dark);
+    flex-shrink: 0;
+    margin-right: 12px;
+    transition: all 0.2s;
+  }
+  .meal-check-item.checked .meal-num {
+    background: var(--sage);
+    border-color: var(--sage);
+    color: #fff;
+  }
+  .meal-desc { flex: 1; font-size: 13px; color: var(--text-mid); }
+  .meal-check-item.checked .meal-desc { color: var(--text-light); text-decoration: line-through; }
+
+  /* Memo */
+  .memo-area {
+    background: #fff;
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    padding: 14px 16px;
+    margin-bottom: 16px;
+  }
+  .memo-input {
+    width: 100%;
+    border: none;
+    outline: none;
+    font-family: 'Noto Sans KR', sans-serif;
+    font-size: 13px;
+    color: var(--text-dark);
+    resize: none;
+    min-height: 60px;
+    background: transparent;
+    line-height: 1.7;
+  }
+  .memo-input::placeholder { color: var(--text-light); }
+
+  /* Save button */
+  .save-btn {
+    width: 100%;
+    background: var(--sage-dark);
+    color: #fff;
+    border: none;
+    border-radius: var(--radius);
+    padding: 16px;
+    font-family: 'Noto Sans KR', sans-serif;
+    font-size: 15px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+    letter-spacing: 0.3px;
+  }
+  .save-btn:active { transform: scale(0.98); opacity: 0.9; }
+  .save-btn.saved { background: var(--sage); }
+
+  /* ─── TAB 2: 기록 확인 ─── */
+  .summary-stats {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+    margin-bottom: 20px;
+  }
+  .stat-card {
+    background: #fff;
+    border-radius: var(--radius-sm);
+    padding: 14px 10px;
+    text-align: center;
+    box-shadow: var(--shadow);
+  }
+  .stat-val { font-size: 22px; font-weight: 700; color: var(--sage-dark); }
+  .stat-label { font-size: 11px; color: var(--text-light); margin-top: 3px; }
+
+  /* Weight chart */
+  .chart-card {
+    background: #fff;
+    border-radius: var(--radius);
+    padding: 16px;
+    box-shadow: var(--shadow);
+    margin-bottom: 16px;
+  }
+  .chart-title { font-size: 13px; font-weight: 500; color: var(--text-mid); margin-bottom: 12px; }
+  canvas { width: 100% !important; }
+
+  /* History list */
+  .history-item {
+    background: #fff;
+    border-radius: var(--radius-sm);
+    padding: 14px 16px;
+    margin-bottom: 10px;
+    box-shadow: var(--shadow);
+    cursor: pointer;
+  }
+  .history-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+  }
+  .history-date { font-size: 13px; font-weight: 500; color: var(--text-dark); }
+  .history-weight { font-size: 15px; font-weight: 700; color: var(--sage-dark); }
+
+  .progress-bar-wrap {
+    background: var(--sage-pale);
+    border-radius: 4px;
+    height: 6px;
+    overflow: hidden;
+  }
+  .progress-bar-fill {
+    height: 100%;
+    border-radius: 4px;
+    background: linear-gradient(90deg, var(--sage-light), var(--sage));
+    transition: width 0.4s ease;
+  }
+  .progress-label {
+    font-size: 11px;
+    color: var(--text-light);
+    margin-top: 4px;
+  }
+
+  /* Detail dots */
+  .detail-dots {
+    display: flex;
+    gap: 4px;
+    flex-wrap: wrap;
+    margin-top: 8px;
+  }
+  .dot-badge {
+    font-size: 11px;
+    padding: 2px 8px;
+    border-radius: 20px;
+    background: var(--sage-pale);
+    color: var(--sage-dark);
+  }
+  .dot-badge.done { background: var(--sage-pale); color: var(--sage-dark); }
+  .dot-badge.miss { background: #FEF0F0; color: #E07070; }
+
+  /* Detail modal */
+  .detail-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.4);
+    z-index: 200;
+    align-items: flex-end;
+    justify-content: center;
+  }
+  .detail-overlay.open { display: flex; }
+  .detail-sheet {
+    background: var(--cream);
+    border-radius: 20px 20px 0 0;
+    width: 100%;
+    max-width: 480px;
+    max-height: 85vh;
+    overflow-y: auto;
+    padding: 20px 16px 40px;
+    animation: slideUp 0.25s ease;
+  }
+  @keyframes slideUp {
+    from { transform: translateY(40px); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
+  }
+  .sheet-handle {
+    width: 36px; height: 4px;
+    background: var(--border-strong);
+    border-radius: 2px;
+    margin: 0 auto 16px;
+  }
+  .sheet-date { font-size: 16px; font-weight: 700; color: var(--text-dark); margin-bottom: 16px; }
+  .sheet-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 0;
+    border-bottom: 1px solid var(--border);
+    font-size: 13px;
+  }
+  .sheet-row:last-child { border-bottom: none; }
+  .sheet-key { color: var(--text-mid); }
+  .sheet-val { font-weight: 500; }
+  .sheet-val.ok { color: var(--sage-dark); }
+  .sheet-val.no { color: #E07070; }
+
+  /* ─── TAB 3: 식단표 ─── */
+  .diet-card {
+    background: #fff;
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    overflow: hidden;
+    margin-bottom: 16px;
+  }
+  .diet-card-header {
+    background: var(--sage-dark);
+    padding: 12px 16px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .diet-num {
+    width: 26px; height: 26px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.2);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 13px;
+    font-weight: 700;
+    color: #fff;
+  }
+  .diet-meal-name { font-size: 14px; font-weight: 500; color: #fff; }
+  .diet-meal-type { font-size: 11px; color: var(--sage-light); margin-left: auto; }
+  .diet-body { padding: 14px 16px; }
+  .diet-row {
+    display: flex;
+    justify-content: space-between;
+    padding: 6px 0;
+    font-size: 13px;
+    border-bottom: 1px solid var(--border);
+  }
+  .diet-row:last-child { border-bottom: none; }
+  .diet-food { color: var(--text-dark); }
+  .diet-amount { color: var(--sage-dark); font-weight: 500; }
+
+  .macro-summary {
+    background: var(--sage-pale);
+    border-radius: var(--radius-sm);
+    padding: 12px 16px;
+    margin-bottom: 16px;
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    text-align: center;
+    gap: 8px;
+  }
+  .macro-item .mv { font-size: 15px; font-weight: 700; color: var(--sage-dark); }
+  .macro-item .ml { font-size: 11px; color: var(--text-light); margin-top: 2px; }
+
+  .rule-card {
+    background: var(--warn-light);
+    border: 1px solid rgba(229,192,123,0.4);
+    border-radius: var(--radius-sm);
+    padding: 12px 16px;
+    margin-bottom: 10px;
+  }
+  .rule-title { font-size: 12px; font-weight: 500; color: #9A7B2E; margin-bottom: 6px; }
+  .rule-item { font-size: 13px; color: var(--text-mid); line-height: 1.9; }
+
+  /* Bottom nav */
+  .bottom-nav {
+    display: none; /* tabs handle navigation */
+  }
+
+  /* Setup banner */
+  .setup-banner {
+    background: var(--warn-light);
+    border: 1px solid rgba(229,192,123,0.5);
+    border-radius: var(--radius-sm);
+    padding: 12px 16px;
+    margin-bottom: 16px;
+    font-size: 13px;
+    color: #7A6020;
+    line-height: 1.7;
+  }
+  .setup-banner a { color: var(--sage-dark); font-weight: 500; }
+
+  /* Spinner */
+  .spinner {
+    display: none;
+    width: 16px; height: 16px;
+    border: 2px solid rgba(255,255,255,0.3);
+    border-top-color: #fff;
+    border-radius: 50%;
+    animation: spin 0.6s linear infinite;
+    margin: 0 auto;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* Toast */
+  .toast {
+    position: fixed;
+    bottom: 24px;
+    left: 50%;
+    transform: translateX(-50%) translateY(20px);
+    background: var(--text-dark);
+    color: #fff;
+    padding: 10px 20px;
+    border-radius: 20px;
+    font-size: 13px;
+    opacity: 0;
+    transition: all 0.3s;
+    pointer-events: none;
+    z-index: 999;
+    white-space: nowrap;
+  }
+  .toast.show {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+
+  /* Settings section */
+  .settings-group {
+    background: #fff;
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    overflow: hidden;
+    margin-bottom: 16px;
+  }
+  .settings-item {
+    padding: 14px 16px;
+    border-bottom: 1px solid var(--border);
+    font-size: 13px;
+  }
+  .settings-item:last-child { border-bottom: none; }
+  .settings-label { color: var(--text-mid); margin-bottom: 6px; font-size: 12px; }
+  .settings-input {
+    width: 100%;
+    border: 1px solid var(--border-strong);
+    border-radius: 8px;
+    padding: 8px 12px;
+    font-family: 'Noto Sans KR', sans-serif;
+    font-size: 13px;
+    color: var(--text-dark);
+    outline: none;
+    background: var(--warm-white);
+  }
+  .settings-input:focus { border-color: var(--sage); }
+  .settings-save-btn {
+    width: 100%;
+    background: var(--sage);
+    color: #fff;
+    border: none;
+    border-radius: 10px;
+    padding: 12px;
+    font-family: 'Noto Sans KR', sans-serif;
+    font-size: 14px;
+    cursor: pointer;
+    margin-top: 4px;
+  }
+
+  @media (max-width: 360px) {
+    .weight-input { font-size: 22px; width: 100px; }
+    .macro-summary { grid-template-columns: repeat(2, 1fr); }
+  }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-top">
+    <div class="logo">가히의 <span>다이어트</span> 트래커</div>
+    <div class="today-badge" id="todayBadge"></div>
+  </div>
+  <div class="tabs">
+    <button class="tab-btn active" onclick="switchTab('record')">✏️ 오늘 기록</button>
+    <button class="tab-btn" onclick="switchTab('history')">📊 기록 확인</button>
+    <button class="tab-btn" onclick="switchTab('diet')">🥗 식단표</button>
+    <button class="tab-btn" onclick="switchTab('settings')">⚙️</button>
+  </div>
+</div>
+
+<div class="content">
+
+  <!-- ════ TAB 1: 오늘 기록 ════ -->
+  <div class="tab-panel active" id="tab-record">
+    <div class="date-header">
+      <div class="date-main" id="recordDate"></div>
+      <div class="date-sub" id="recordDateSub"></div>
+    </div>
+
+    <!-- Weight -->
+    <div class="weight-card">
+      <div class="weight-label">⚖️ 공복 체중</div>
+      <div class="weight-input-row">
+        <input type="number" class="weight-input" id="weightInput" placeholder="00.0" step="0.1" min="30" max="200">
+        <span class="weight-unit">kg</span>
+      </div>
+      <div class="weight-diff" id="weightDiff"></div>
+    </div>
+
+    <!-- 식단 체크 -->
+    <div class="section-title">식단 준수</div>
+    <div class="check-card">
+      <div class="meal-check-item" onclick="toggleMeal(1)" id="meal-1">
+        <div class="meal-num">1</div>
+        <div class="meal-desc">밥 150g · 닭 120g · 삶은계란 · 야채</div>
+      </div>
+      <div class="meal-check-item" onclick="toggleMeal(2)" id="meal-2">
+        <div class="meal-num">2</div>
+        <div class="meal-desc">밥 150g · 닭/소고기 120g · 야채</div>
+      </div>
+      <div class="meal-check-item" onclick="toggleMeal(3)" id="meal-3">
+        <div class="meal-num">3</div>
+        <div class="meal-desc">단백질 쉐이크 · 고구마 100g / 바나나</div>
+      </div>
+      <div class="meal-check-item" onclick="toggleMeal(4)" id="meal-4">
+        <div class="meal-num">4</div>
+        <div class="meal-desc">밥 100g · 닭 100g · 계란 · 야채</div>
+      </div>
+    </div>
+
+    <!-- 생활 체크 -->
+    <div class="section-title">생활 수칙</div>
+    <div class="check-card">
+      <div class="check-item" onclick="toggleCheck('exercise')" id="check-exercise">
+        <div class="check-box">
+          <svg width="12" height="9" viewBox="0 0 12 9" fill="none">
+            <path d="M1 4L4.5 7.5L11 1" stroke="white" stroke-width="2" stroke-linecap="round"/>
+          </svg>
+        </div>
+        <div class="check-text">
+          <div class="main">🏃‍♀️ 유산소 30분 이상</div>
+          <div class="sub">빨리 걷기, 런닝 등</div>
+        </div>
+      </div>
+      <div class="check-item" onclick="toggleCheck('water')" id="check-water">
+        <div class="check-box">
+          <svg width="12" height="9" viewBox="0 0 12 9" fill="none">
+            <path d="M1 4L4.5 7.5L11 1" stroke="white" stroke-width="2" stroke-linecap="round"/>
+          </svg>
+        </div>
+        <div class="check-text">
+          <div class="main">💧 물 2L 이상</div>
+          <div class="sub">커피 오전 1잔만</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 수면 -->
+    <div class="section-title">수면 시간</div>
+    <div class="check-card">
+      <div style="padding: 14px 16px; display: flex; align-items: center; gap: 12px;">
+        <span style="font-size: 20px;">🌙</span>
+        <div style="flex:1">
+          <div style="font-size: 13px; color: var(--text-mid); margin-bottom: 6px;">총 수면 시간</div>
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <input type="number" id="sleepInput" placeholder="7" min="1" max="24" step="0.5"
+              style="width:70px; border:1px solid var(--border-strong); border-radius:8px; padding:6px 10px; font-size:15px; font-weight:700; color:var(--sage-dark); font-family:'Noto Sans KR',sans-serif; outline:none; background: var(--warm-white);">
+            <span style="font-size: 13px; color: var(--text-light);">시간</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 특이사항 -->
+    <div class="section-title">메모 (생리기간 등)</div>
+    <div class="memo-area">
+      <textarea class="memo-input" id="memoInput" placeholder="특이사항이나 컨디션을 간단히 적어주세요..." rows="2"></textarea>
+    </div>
+
+    <!-- Save -->
+    <button class="save-btn" id="saveBtn" onclick="saveRecord()">
+      <span id="saveBtnText">오늘 기록 저장하기</span>
+      <div class="spinner" id="saveSpinner"></div>
+    </button>
+  </div>
+
+  <!-- ════ TAB 2: 기록 확인 ════ -->
+  <div class="tab-panel" id="tab-history">
+    <div style="height:16px"></div>
+
+    <!-- Stats -->
+    <div class="summary-stats">
+      <div class="stat-card">
+        <div class="stat-val" id="statDays">-</div>
+        <div class="stat-label">기록일수</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-val" id="statDiet">-%</div>
+        <div class="stat-label">식단 준수율</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-val" id="statExercise">-%</div>
+        <div class="stat-label">운동 실시율</div>
+      </div>
+    </div>
+
+    <!-- Weight chart -->
+    <div class="chart-card">
+      <div class="chart-title">체중 변화</div>
+      <canvas id="weightChart" height="180"></canvas>
+    </div>
+
+    <!-- History list -->
+    <div class="section-title">일별 기록</div>
+    <div id="historyList">
+      <div style="text-align:center; padding:40px 0; color:var(--text-light); font-size:13px;">
+        아직 기록이 없어요 😊<br>오늘 첫 기록을 시작해보세요!
+      </div>
+    </div>
+  </div>
+
+  <!-- ════ TAB 3: 식단표 ════ -->
+  <div class="tab-panel" id="tab-diet">
+    <div style="height:16px"></div>
+
+    <div class="macro-summary">
+      <div class="macro-item"><div class="mv">1,400~</div><div class="ml">칼로리</div></div>
+      <div class="macro-item"><div class="mv">130~150g</div><div class="ml">탄수화물</div></div>
+      <div class="macro-item"><div class="mv">100~110g</div><div class="ml">단백질</div></div>
+      <div class="macro-item"><div class="mv">35~45g</div><div class="ml">지방</div></div>
+    </div>
+
+    <div class="diet-card">
+      <div class="diet-card-header">
+        <div class="diet-num">1</div>
+        <div class="diet-meal-name">1끼 (아침)</div>
+        <div class="diet-meal-type">메인</div>
+      </div>
+      <div class="diet-body">
+        <div class="diet-row"><span class="diet-food">밥</span><span class="diet-amount">150g</span></div>
+        <div class="diet-row"><span class="diet-food">닭가슴살</span><span class="diet-amount">120g</span></div>
+        <div class="diet-row"><span class="diet-food">삶은 계란</span><span class="diet-amount">1개</span></div>
+        <div class="diet-row"><span class="diet-food">익힌 야채</span><span class="diet-amount">조금</span></div>
+        <div class="diet-row"><span class="diet-food">소금</span><span class="diet-amount">1g</span></div>
+      </div>
+    </div>
+
+    <div class="diet-card">
+      <div class="diet-card-header">
+        <div class="diet-num">2</div>
+        <div class="diet-meal-name">2끼 (점심)</div>
+        <div class="diet-meal-type">메인</div>
+      </div>
+      <div class="diet-body">
+        <div class="diet-row"><span class="diet-food">밥</span><span class="diet-amount">150g</span></div>
+        <div class="diet-row"><span class="diet-food">닭 or 소고기</span><span class="diet-amount">120g</span></div>
+        <div class="diet-row"><span class="diet-food">익힌 야채</span><span class="diet-amount">조금</span></div>
+        <div class="diet-row"><span class="diet-food">소금</span><span class="diet-amount">1g</span></div>
+      </div>
+    </div>
+
+    <div class="diet-card">
+      <div class="diet-card-header" style="background: var(--sage);">
+        <div class="diet-num">3</div>
+        <div class="diet-meal-name">3끼 (간식)</div>
+        <div class="diet-meal-type">스낵</div>
+      </div>
+      <div class="diet-body">
+        <div class="diet-row"><span class="diet-food">단백질 쉐이크</span><span class="diet-amount">1개 (단백질 20g↑, 당류 5g↓)</span></div>
+        <div class="diet-row"><span class="diet-food">고구마</span><span class="diet-amount">100g</span></div>
+        <div class="diet-row" style="align-items:center"><span class="diet-food" style="color:var(--text-light)">또는</span><span></span></div>
+        <div class="diet-row"><span class="diet-food">바나나</span><span class="diet-amount">1개</span></div>
+      </div>
+    </div>
+
+    <div class="diet-card">
+      <div class="diet-card-header">
+        <div class="diet-num">4</div>
+        <div class="diet-meal-name">4끼 (저녁)</div>
+        <div class="diet-meal-type">메인</div>
+      </div>
+      <div class="diet-body">
+        <div class="diet-row"><span class="diet-food">밥</span><span class="diet-amount">100g</span></div>
+        <div class="diet-row"><span class="diet-food">닭가슴살</span><span class="diet-amount">100g</span></div>
+        <div class="diet-row"><span class="diet-food">계란</span><span class="diet-amount">1개</span></div>
+        <div class="diet-row"><span class="diet-food">익힌 야채</span><span class="diet-amount">조금</span></div>
+        <div class="diet-row"><span class="diet-food">소금</span><span class="diet-amount">1g</span></div>
+      </div>
+    </div>
+
+    <div class="rule-card">
+      <div class="rule-title">🍳 조리 원칙</div>
+      <div class="rule-item">
+        올리브유만 허용 — 하루 10g 저울로 측정<br>
+        소스 — 비비드키친 (간장종지에 소량)<br>
+        닭가슴살 하루치 한번에 구워서 소분
+      </div>
+    </div>
+
+    <div class="rule-card">
+      <div class="rule-title">💧 필수 수칙</div>
+      <div class="rule-item">
+        물 2L 이상 / 커피 오전 1잔<br>
+        유산소 30분 매일 필수<br>
+        기초대사량 이하로 먹으면 역효과!
+      </div>
+    </div>
+  </div>
+
+  <!-- ════ TAB 4: 설정 ════ -->
+  <div class="tab-panel" id="tab-settings">
+    <div style="height:16px"></div>
+    <div class="section-title">Google Sheets 연동</div>
+
+    <div class="setup-banner">
+      📋 <strong>연동 방법:</strong><br>
+      1. 아래 Apps Script 코드를 Google Sheets에 붙여넣기<br>
+      2. 웹앱으로 배포 후 URL을 아래에 입력<br>
+      <a href="#" onclick="showSetupGuide(); return false;">📖 자세한 설정 가이드 보기</a>
+    </div>
+
+    <div class="settings-group">
+      <div class="settings-item">
+        <div class="settings-label">Apps Script 웹앱 URL</div>
+        <input type="url" class="settings-input" id="scriptUrl" placeholder="https://script.google.com/macros/s/...">
+      </div>
+      <div class="settings-item">
+        <div class="settings-label">내 이름 (시트 구분용)</div>
+        <input type="text" class="settings-input" id="userName" placeholder="가히">
+      </div>
+      <div class="settings-item">
+        <button class="settings-save-btn" onclick="saveSettings()">설정 저장</button>
+      </div>
+    </div>
+
+    <div class="section-title">Apps Script 코드</div>
+    <div style="background:#1E1E2E; border-radius:var(--radius); padding:14px; margin-bottom:16px; overflow-x:auto;">
+      <pre id="appsScriptCode" style="font-size:10px; color:#CDD6F4; font-family:monospace; line-height:1.6; white-space:pre; margin:0;"></pre>
+    </div>
+    <button onclick="copyCode()" style="width:100%; background:var(--sage-pale); color:var(--sage-dark); border:1px solid var(--border-strong); border-radius:10px; padding:12px; font-family:'Noto Sans KR',sans-serif; font-size:13px; cursor:pointer; margin-bottom:20px;">
+      📋 코드 복사하기
+    </button>
+  </div>
+
+</div><!-- /content -->
+
+<!-- Detail Sheet -->
+<div class="detail-overlay" id="detailOverlay" onclick="closeDetail(event)">
+  <div class="detail-sheet" id="detailSheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-date" id="sheetDate"></div>
+    <div id="sheetContent"></div>
+  </div>
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<!-- Chart.js -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script>
+// ═══════════════════════════════════════════
+// CONFIG & STATE
+// ═══════════════════════════════════════════
+const STORAGE_KEY = 'gahi_diet_records';
+const SETTINGS_KEY = 'gahi_diet_settings';
+
+let records = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
+let settings = JSON.parse(localStorage.getItem(SETTINGS_KEY) || '{"scriptUrl":"","userName":"가히"}');
+let weightChart = null;
+
+const today = new Date();
+const todayKey = formatDate(today);
+
+// ═══════════════════════════════════════════
+// DATE UTILS
+// ═══════════════════════════════════════════
+function formatDate(d) {
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
+function koreanDate(d) {
+  const days = ['일','월','화','수','목','금','토'];
+  const date = d instanceof Date ? d : new Date(d + 'T00:00:00');
+  return `${date.getMonth()+1}월 ${date.getDate()}일 (${days[date.getDay()]})`;
+}
+
+// ═══════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════
+function init() {
+  // Header date
+  document.getElementById('todayBadge').textContent = `${today.getMonth()+1}/${today.getDate()}`;
+  document.getElementById('recordDate').textContent = koreanDate(today);
+  const weekdays = ['일요일','월요일','화요일','수요일','목요일','금요일','토요일'];
+  document.getElementById('recordDateSub').textContent = `${today.getFullYear()}년 · ${weekdays[today.getDay()]}`;
+
+  // Load today's record if exists
+  const rec = records[todayKey];
+  if (rec) {
+    if (rec.weight) document.getElementById('weightInput').value = rec.weight;
+    if (rec.sleep) document.getElementById('sleepInput').value = rec.sleep;
+    if (rec.memo) document.getElementById('memoInput').value = rec.memo;
+    if (rec.meals) rec.meals.forEach(m => {
+      if (m) document.getElementById(`meal-${rec.meals.indexOf(m)+1}`)?.classList.add('checked');
+    });
+    // meals stored as array of booleans
+    if (rec.meal1) document.getElementById('meal-1').classList.add('checked');
+    if (rec.meal2) document.getElementById('meal-2').classList.add('checked');
+    if (rec.meal3) document.getElementById('meal-3').classList.add('checked');
+    if (rec.meal4) document.getElementById('meal-4').classList.add('checked');
+    if (rec.exercise) document.getElementById('check-exercise').classList.add('checked');
+    if (rec.water) document.getElementById('check-water').classList.add('checked');
+  }
+
+  // Weight diff
+  updateWeightDiff();
+
+  // Settings
+  document.getElementById('scriptUrl').value = settings.scriptUrl || '';
+  document.getElementById('userName').value = settings.userName || '가히';
+
+  // Apps script code
+  document.getElementById('appsScriptCode').textContent = getAppsScriptCode();
+}
+
+// ═══════════════════════════════════════════
+// TOGGLE CHECKS
+// ═══════════════════════════════════════════
+function toggleMeal(n) {
+  const el = document.getElementById(`meal-${n}`);
+  el.classList.toggle('checked');
+  playTick();
+}
+function toggleCheck(id) {
+  const el = document.getElementById(`check-${id}`);
+  el.classList.toggle('checked');
+  playTick();
+}
+function playTick() {
+  // light haptic if available
+  if (navigator.vibrate) navigator.vibrate(10);
+}
+
+// ═══════════════════════════════════════════
+// WEIGHT DIFF
+// ═══════════════════════════════════════════
+function updateWeightDiff() {
+  const wInput = document.getElementById('weightInput');
+  wInput.addEventListener('input', () => {
+    const val = parseFloat(wInput.value);
+    if (!val) { document.getElementById('weightDiff').textContent = ''; return; }
+    // find prev day
+    const sorted = Object.keys(records).sort().reverse();
+    const prev = sorted.find(k => k < todayKey && records[k].weight);
+    if (prev && records[prev].weight) {
+      const diff = (val - records[prev].weight).toFixed(1);
+      const el = document.getElementById('weightDiff');
+      if (diff > 0) {
+        el.innerHTML = `전날 대비 <span class="diff-val diff-up">+${diff}kg ↑</span>`;
+      } else if (diff < 0) {
+        el.innerHTML = `전날 대비 <span class="diff-val diff-down">${diff}kg ↓</span>`;
+      } else {
+        el.innerHTML = `전날 대비 <span class="diff-val">변화없음</span>`;
+      }
+    }
+  });
+}
+
+// ═══════════════════════════════════════════
+// SAVE
+// ═══════════════════════════════════════════
+async function saveRecord() {
+  const weight = parseFloat(document.getElementById('weightInput').value) || null;
+  const sleep = parseFloat(document.getElementById('sleepInput').value) || null;
+  const memo = document.getElementById('memoInput').value.trim();
+  const meal1 = document.getElementById('meal-1').classList.contains('checked');
+  const meal2 = document.getElementById('meal-2').classList.contains('checked');
+  const meal3 = document.getElementById('meal-3').classList.contains('checked');
+  const meal4 = document.getElementById('meal-4').classList.contains('checked');
+  const exercise = document.getElementById('check-exercise').classList.contains('checked');
+  const water = document.getElementById('check-water').classList.contains('checked');
+
+  const rec = { weight, sleep, memo, meal1, meal2, meal3, meal4, exercise, water, savedAt: new Date().toISOString() };
+
+  // Save locally always
+  records[todayKey] = rec;
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(records));
+
+  // Try to sync to Google Sheets
+  if (settings.scriptUrl) {
+    const btn = document.getElementById('saveBtn');
+    const txt = document.getElementById('saveBtnText');
+    const spin = document.getElementById('saveSpinner');
+    btn.disabled = true;
+    txt.style.display = 'none';
+    spin.style.display = 'block';
+
+    try {
+      const payload = {
+        date: todayKey,
+        name: settings.userName || '가히',
+        weight: weight || '',
+        meal1: meal1 ? 'O' : 'X',
+        meal2: meal2 ? 'O' : 'X',
+        meal3: meal3 ? 'O' : 'X',
+        meal4: meal4 ? 'O' : 'X',
+        exercise: exercise ? 'O' : 'X',
+        water: water ? 'O' : 'X',
+        sleep: sleep || '',
+        memo: memo
+      };
+      await fetch(settings.scriptUrl, {
+        method: 'POST',
+        mode: 'no-cors',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      showToast('✅ 저장 완료! 선생님께도 전송됐어요');
+    } catch(e) {
+      showToast('📱 로컬 저장됨 (네트워크 오류)');
+    }
+    btn.disabled = false;
+    txt.style.display = 'block';
+    spin.style.display = 'none';
+    btn.classList.add('saved');
+    setTimeout(() => btn.classList.remove('saved'), 2000);
+  } else {
+    showToast('✅ 로컬에 저장됐어요!');
+    document.getElementById('saveBtn').classList.add('saved');
+    setTimeout(() => document.getElementById('saveBtn').classList.remove('saved'), 2000);
+  }
+}
+
+// ═══════════════════════════════════════════
+// TABS
+// ═══════════════════════════════════════════
+function switchTab(name) {
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById(`tab-${name}`).classList.add('active');
+  event.currentTarget.classList.add('active');
+
+  if (name === 'history') renderHistory();
+}
+
+// ═══════════════════════════════════════════
+// HISTORY
+// ═══════════════════════════════════════════
+function renderHistory() {
+  const sorted = Object.keys(records).sort().reverse();
+  if (!sorted.length) return;
+
+  // Stats
+  const total = sorted.length;
+  let dietOk = 0, exOk = 0;
+  sorted.forEach(k => {
+    const r = records[k];
+    const meals = [r.meal1,r.meal2,r.meal3,r.meal4].filter(Boolean).length;
+    if (meals >= 3) dietOk++;
+    if (r.exercise) exOk++;
+  });
+  document.getElementById('statDays').textContent = total;
+  document.getElementById('statDiet').textContent = Math.round(dietOk/total*100) + '%';
+  document.getElementById('statExercise').textContent = Math.round(exOk/total*100) + '%';
+
+  // Chart
+  const labels = sorted.slice(0,14).reverse().map(k => {
+    const d = new Date(k+'T00:00:00');
+    return `${d.getMonth()+1}/${d.getDate()}`;
+  });
+  const weights = sorted.slice(0,14).reverse().map(k => records[k].weight || null);
+
+  if (weightChart) weightChart.destroy();
+  const ctx = document.getElementById('weightChart').getContext('2d');
+  weightChart = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels,
+      datasets: [{
+        data: weights,
+        borderColor: '#7C9A7E',
+        backgroundColor: 'rgba(124,154,126,0.1)',
+        pointBackgroundColor: '#4A6B4C',
+        pointRadius: 4,
+        fill: true,
+        tension: 0.4,
+        spanGaps: true
+      }]
+    },
+    options: {
+      responsive: true,
+      plugins: { legend: { display: false } },
+      scales: {
+        y: {
+          grid: { color: 'rgba(0,0,0,0.05)' },
+          ticks: { font: { size: 11 }, color: '#8FA690' }
+        },
+        x: {
+          grid: { display: false },
+          ticks: { font: { size: 11 }, color: '#8FA690' }
+        }
+      }
+    }
+  });
+
+  // List
+  const listEl = document.getElementById('historyList');
+  listEl.innerHTML = sorted.map(k => {
+    const r = records[k];
+    const meals = [r.meal1,r.meal2,r.meal3,r.meal4];
+    const doneMeals = meals.filter(Boolean).length;
+    const pct = Math.round(doneMeals/4*100);
+    return `
+      <div class="history-item" onclick="openDetail('${k}')">
+        <div class="history-header">
+          <div class="history-date">${koreanDate(k)}</div>
+          <div class="history-weight">${r.weight ? r.weight+'kg' : '-'}</div>
+        </div>
+        <div class="progress-bar-wrap">
+          <div class="progress-bar-fill" style="width:${pct}%"></div>
+        </div>
+        <div class="progress-label">식단 ${doneMeals}/4 · ${r.exercise?'운동 ✓':'운동 ✗'} · ${r.water?'물 ✓':'물 ✗'} · 수면 ${r.sleep||'-'}h</div>
+      </div>
+    `;
+  }).join('');
+}
+
+function openDetail(key) {
+  const r = records[key];
+  document.getElementById('sheetDate').textContent = koreanDate(key);
+  const rows = [
+    ['체중', r.weight ? r.weight+'kg' : '미기록', !!r.weight],
+    ['1끼', r.meal1 ? '완료' : '미완료', r.meal1],
+    ['2끼', r.meal2 ? '완료' : '미완료', r.meal2],
+    ['3끼 (간식)', r.meal3 ? '완료' : '미완료', r.meal3],
+    ['4끼', r.meal4 ? '완료' : '미완료', r.meal4],
+    ['유산소 30분', r.exercise ? '완료' : '미실시', r.exercise],
+    ['물 2L', r.water ? '완료' : '미완료', r.water],
+    ['수면', r.sleep ? r.sleep+'시간' : '미기록', !!r.sleep],
+    ['메모', r.memo || '없음', true],
+  ];
+  document.getElementById('sheetContent').innerHTML = rows.map(([k,v,ok]) =>
+    `<div class="sheet-row">
+      <span class="sheet-key">${k}</span>
+      <span class="sheet-val ${ok?'ok':'no'}">${v}</span>
+    </div>`
+  ).join('');
+  document.getElementById('detailOverlay').classList.add('open');
+}
+function closeDetail(e) {
+  if (e.target === document.getElementById('detailOverlay')) {
+    document.getElementById('detailOverlay').classList.remove('open');
+  }
+}
+
+// ═══════════════════════════════════════════
+// SETTINGS
+// ═══════════════════════════════════════════
+function saveSettings() {
+  settings.scriptUrl = document.getElementById('scriptUrl').value.trim();
+  settings.userName = document.getElementById('userName').value.trim() || '가히';
+  localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
+  showToast('✅ 설정 저장됨!');
+}
+
+// ═══════════════════════════════════════════
+// APPS SCRIPT CODE
+// ═══════════════════════════════════════════
+function getAppsScriptCode() {
+  return `function doPost(e) {
+  try {
+    var data = JSON.parse(e.postData.contents);
+    var ss = SpreadsheetApp.getActiveSpreadsheet();
+    var sheet = ss.getSheetByName('기록') 
+               || ss.insertSheet('기록');
+    
+    // 헤더 없으면 추가
+    if (sheet.getLastRow() === 0) {
+      sheet.appendRow([
+        '날짜','이름','체중',
+        '1끼','2끼','3끼','4끼',
+        '운동','물','수면','메모'
+      ]);
+    }
+    
+    // 기존 날짜 있으면 업데이트
+    var found = false;
+    var rows = sheet.getDataRange().getValues();
+    for (var i = 1; i < rows.length; i++) {
+      if (rows[i][0] === data.date && 
+          rows[i][1] === data.name) {
+        sheet.getRange(i+1, 1, 1, 11).setValues([[
+          data.date, data.name, data.weight,
+          data.meal1, data.meal2, 
+          data.meal3, data.meal4,
+          data.exercise, data.water,
+          data.sleep, data.memo
+        ]]);
+        found = true;
+        break;
+      }
+    }
+    if (!found) {
+      sheet.appendRow([
+        data.date, data.name, data.weight,
+        data.meal1, data.meal2,
+        data.meal3, data.meal4,
+        data.exercise, data.water,
+        data.sleep, data.memo
+      ]);
+    }
+    
+    return ContentService
+      .createTextOutput(JSON.stringify({ok:true}))
+      .setMimeType(ContentService.MimeType.JSON);
+  } catch(err) {
+    return ContentService
+      .createTextOutput(JSON.stringify({ok:false,error:err.toString()}))
+      .setMimeType(ContentService.MimeType.JSON);
+  }
+}
+
+function doGet(e) {
+  return ContentService
+    .createTextOutput("Diet Tracker API")
+    .setMimeType(ContentService.MimeType.TEXT);
+}`;
+}
+
+function copyCode() {
+  const code = getAppsScriptCode();
+  navigator.clipboard.writeText(code).then(() => {
+    showToast('📋 코드 복사됨!');
+  }).catch(() => {
+    showToast('코드를 직접 선택해서 복사해주세요');
+  });
+}
+
+function showSetupGuide() {
+  showToast('Google Sheets > 확장프로그램 > Apps Script에 코드 붙여넣기 후 배포하세요!');
+}
+
+// ═══════════════════════════════════════════
+// TOAST
+// ═══════════════════════════════════════════
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2800);
+}
+
+// ═══════════════════════════════════════════
+// START
+// ═══════════════════════════════════════════
+init();
+</script>
+</body>
+</html>
