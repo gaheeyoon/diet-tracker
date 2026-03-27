@@ -1057,10 +1057,13 @@ const STORAGE_KEY = 'gahi_diet_records';
 const SETTINGS_KEY = 'gahi_diet_settings';
 
 let records = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
-const DEFAULT_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzkZLrZrEyYpNFnnvYdxH0TG6TXu9m3gwqjZz8GxAfA-ghpDZB1DYgdpOASd6e_t7PO/exec';
+const DEFAULT_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzSSszALp-hIpNaHyFSjl0fHbR_xtz_AUUCKMvGALQx5N5LQULhY_8ztJQBBUJAdbF6/exec';
 let settings = JSON.parse(localStorage.getItem(SETTINGS_KEY) || JSON.stringify({scriptUrl: DEFAULT_SCRIPT_URL, userName: '가히'}));
-// scriptUrl이 비어있으면 기본값 사용
-if (!settings.scriptUrl) settings.scriptUrl = DEFAULT_SCRIPT_URL;
+// scriptUrl이 비어있거나 유효하지 않으면 기본값 사용
+if (!settings.scriptUrl || !settings.scriptUrl.includes('script.google.com')) {
+  settings.scriptUrl = DEFAULT_SCRIPT_URL;
+  localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
+}
 let weightChart = null;
 
 const today = new Date();
@@ -1581,15 +1584,9 @@ async function saveSettings() {
 // APPS SCRIPT CODE
 // ═══════════════════════════════════════════
 function getAppsScriptCode() {
-  return `// ★ 스프레드시트 ID 설정 (필수!)
-// Google Sheets URL에서 /d/ 뒤 ~ /edit 앞 부분을 복사해서 붙여넣으세요
-// 예시 URL: https://docs.google.com/spreadsheets/d/[여기가ID]/edit
-var SPREADSHEET_ID = '';  // ← ID를 따옴표 안에 붙여넣기
-
+  return `var SPREADSHEET_ID = '1h6WgjGM3hVd4qrALzLfb9irLRjFjXqf6OVXKe0LC3Cc';
 var SHEET_NAME = '기록';
 var TZ = 'Asia/Seoul';
-
-// 시트 가져오기 (없으면 생성)
 function getSheet() {
   var ss = SpreadsheetApp.openById(SPREADSHEET_ID);
   var sheet = ss.getSheetByName(SHEET_NAME) || ss.insertSheet(SHEET_NAME);
@@ -1598,36 +1595,45 @@ function getSheet() {
   }
   return sheet;
 }
-
-// 날짜값을 YYYY-MM-DD 문자열로 변환 (Date 객체, 문자열 모두 처리)
 function toDateStr(val) {
   if (!val) return '';
   if (val instanceof Date) return Utilities.formatDate(val, TZ, 'yyyy-MM-dd');
   var s = String(val).trim();
   if (/^\d{4}-\d{2}-\d{2}$/.test(s)) return s;
-  try { return Utilities.formatDate(new Date(s), TZ, 'yyyy-MM-dd'); } catch(e) { return ''; }
+  try {
+    return Utilities.formatDate(new Date(s), TZ, 'yyyy-MM-dd');
+  } catch(e) {
+    return '';
+  }
 }
-
-// 저장 / 수정
+function debugGet() {
+  var sheet = getSheet();
+  var lastRow = sheet.getLastRow();
+  Logger.log('lastRow: ' + lastRow);
+  if (lastRow <= 1) { Logger.log('데이터 없음'); return; }
+  var rows = sheet.getRange(2, 1, lastRow - 1, 11).getValues();
+  for (var i = 0; i < rows.length; i++) {
+    var r = rows[i];
+    var key = toDateStr(r[0]);
+    Logger.log('row ' + i + ': raw=' + r[0] + ' / type=' + typeof r[0] + ' / key=' + key);
+  }
+}
 function doPost(e) {
   try {
     var data = JSON.parse(e.postData.contents);
     var sheet = getSheet();
     var targetDate = String(data.date).trim();
     var targetName = String(data.name || '가히').trim();
-
     var newRow = [
       targetDate, targetName,
       data.weight || '',
       data.meal1 || 'X', data.meal2 || 'X',
       data.meal3 || 'X', data.meal4 || 'X',
       data.exercise || 'X',
-      (typeof data.water === 'number' ? data.water : 0),
+      typeof data.water === 'number' ? data.water : 0,
       data.sleep || '',
       data.memo || ''
     ];
-
-    // 같은 날짜+이름 행이 있으면 업데이트, 없으면 추가
     var lastRow = sheet.getLastRow();
     var found = false;
     if (lastRow > 1) {
@@ -1641,7 +1647,6 @@ function doPost(e) {
       }
     }
     if (!found) sheet.appendRow(newRow);
-
     return ContentService
       .createTextOutput(JSON.stringify({ok: true, updated: found}))
       .setMimeType(ContentService.MimeType.JSON);
@@ -1651,8 +1656,6 @@ function doPost(e) {
       .setMimeType(ContentService.MimeType.JSON);
   }
 }
-
-// 전체 기록 조회
 function doGet(e) {
   try {
     var sheet = getSheet();
@@ -1662,7 +1665,6 @@ function doGet(e) {
         .createTextOutput(JSON.stringify({ok: true, records: {}}))
         .setMimeType(ContentService.MimeType.JSON);
     }
-
     var rows = sheet.getRange(2, 1, lastRow - 1, 11).getValues();
     var result = {};
     for (var i = 0; i < rows.length; i++) {
@@ -1670,20 +1672,10 @@ function doGet(e) {
       if (!r[0]) continue;
       var key = toDateStr(r[0]);
       if (!key || !/^\d{4}-\d{2}-\d{2}$/.test(key)) continue;
-
       var w = r[2];
-      // water: 숫자(신규) 또는 "Xml/2000ml"(구형) → 숫자 ml로 통일
       var waterRaw = r[8];
-      var waterMl = 0;
-      if (typeof waterRaw === 'number' && !isNaN(waterRaw)) {
-        waterMl = waterRaw;
-      } else {
-        var waterStr = String(waterRaw || '');
-        var wcMatch = waterStr.match(/(\d+)/);
-        waterMl = wcMatch ? parseInt(wcMatch[1]) : 0;
-      }
-      var wc = Math.round(waterMl / 500);
-
+      var waterMl = (typeof waterRaw === 'number') ? waterRaw
+                  : parseInt(String(waterRaw).replace(/[^0-9]/g, '')) || 0;
       result[key] = {
         weight:     (w !== '' && !isNaN(parseFloat(w))) ? parseFloat(w) : null,
         meal1:      r[3] === 'O',
@@ -1692,12 +1684,11 @@ function doGet(e) {
         meal4:      r[6] === 'O',
         exercise:   r[7] === 'O',
         water:      waterMl,
-        waterCount: wc,
+        waterCount: Math.round(waterMl / 500),
         sleep:      r[9] || null,
         memo:       r[10] || ''
       };
     }
-
     return ContentService
       .createTextOutput(JSON.stringify({ok: true, records: result}))
       .setMimeType(ContentService.MimeType.JSON);
