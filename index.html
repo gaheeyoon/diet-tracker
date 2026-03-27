@@ -1256,8 +1256,14 @@ function loadRecord(dateKey) {
     if (rec.meal3)    document.getElementById('meal-3').classList.add('checked');
     if (rec.meal4)    document.getElementById('meal-4').classList.add('checked');
     if (rec.exercise) document.getElementById('check-exercise').classList.add('checked');
-    waterCount = typeof rec.waterCount === 'number' ? rec.waterCount
-               : (rec.water ? 4 : 0);
+    if (typeof rec.waterCount === 'number') {
+      waterCount = rec.waterCount;
+    } else if (typeof rec.water === 'string' && rec.water.includes('ml')) {
+      const m = rec.water.match(/^(\d+)ml/);
+      waterCount = m ? Math.round(parseInt(m[1]) / 500) : 0;
+    } else {
+      waterCount = rec.water ? 4 : 0;
+    }
     updateWaterUI();
   }
 }
@@ -1342,11 +1348,11 @@ async function saveRecord() {
   const meal3    = document.getElementById('meal-3').classList.contains('checked');
   const meal4    = document.getElementById('meal-4').classList.contains('checked');
   const exercise = document.getElementById('check-exercise').classList.contains('checked');
-  const water    = waterCount >= 4;   // 2L 달성 여부 (Sheets 호환)
+  // water는 waterCount로만 관리
 
   const rec = {
     weight, sleep, memo, meal1, meal2, meal3, meal4,
-    exercise, water, waterCount,  // waterCount = 0~4
+    exercise, waterCount,  // waterCount = 0~4 가 유일한 물 기준
     savedAt: new Date().toISOString()
   };
 
@@ -1498,7 +1504,13 @@ async function renderHistory() {
         <div class="progress-bar-wrap">
           <div class="progress-bar-fill" style="width:${pct}%"></div>
         </div>
-        <div class="progress-label">식단 ${doneMeals}/4 · ${r.exercise?'운동 ✓':'운동 ✗'} · 💧${(typeof r.waterCount==='number'?r.waterCount*500:(r.water?2000:0)).toLocaleString()}ml · 수면 ${r.sleep||'-'}h</div>
+        <div class="progress-label">식단 ${doneMeals}/4 · ${r.exercise?'운동 ✓':'운동 ✗'} · 💧${(function(){
+              if (typeof r.waterCount==='number') return r.waterCount*500;
+              if (typeof r.water==='string' && r.water.includes('ml')) {
+                const m=r.water.match(/^(\d+)ml/); return m?parseInt(m[1]):0;
+              }
+              return 0;
+            })().toLocaleString()}ml · 수면 ${r.sleep||'-'}h</div>
       </div>
     `;
   }).join('');
@@ -1515,10 +1527,10 @@ function openDetail(key) {
     ['4끼', r.meal4 ? '완료' : '미완료', r.meal4],
     ['유산소 30분', r.exercise ? '완료' : '미실시', r.exercise],
     ['물 섭취', (function(){
-      if (typeof r.waterCount === 'number') return r.waterCount * 500 + 'ml / 2000ml';
+      if (typeof r.waterCount === 'number') return (r.waterCount * 500) + 'ml / 2000ml';
       if (typeof r.water === 'string' && r.water.includes('ml')) return r.water;
-      return r.water ? '2000ml / 2000ml' : '0ml / 2000ml';
-    })(), !!(r.waterCount > 0 || r.water)],
+      return '0ml / 2000ml';
+    })(), !!(r.waterCount > 0 || (typeof r.water === 'string' && r.water.includes('ml') && r.water !== '0ml / 2000ml'))],
     ['수면', r.sleep ? r.sleep+'시간' : '미기록', !!r.sleep],
     ['메모', r.memo || '없음', true],
   ];
