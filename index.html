@@ -1096,6 +1096,14 @@ function koreanDate(d) {
 async function init() {
   currentDateKey = todayKey;
 
+  // localStorage 오염 키 정리 (YYYY-MM-DD 형식 아닌 키 제거)
+  const cleanedRecords = {};
+  for (const [k, v] of Object.entries(records)) {
+    if (/^\d{4}-\d{2}-\d{2}$/.test(k)) cleanedRecords[k] = v;
+  }
+  records = cleanedRecords;
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(records));
+
   // Settings UI
   document.getElementById('scriptUrl').value = settings.scriptUrl || '';
   document.getElementById('userName').value = settings.userName || '가히';
@@ -1127,8 +1135,13 @@ async function fetchAllRecords() {
         if (key) normalized[key] = v;
       }
       if (Object.keys(normalized).length > 0) {
-        // Sheets 데이터를 로컬에 병합 (Sheets 우선)
-        records = Object.assign({}, records, normalized);
+        // Sheets가 진실의 원천 — Sheets 데이터로 완전 교체 (로컬 중복 제거)
+        // 단, YYYY-MM-DD 형식이 아닌 오염된 로컬 키는 버리고 Sheets 데이터만 사용
+        const cleanLocal = {};
+        for (const [k, v] of Object.entries(records)) {
+          if (/^\d{4}-\d{2}-\d{2}$/.test(k)) cleanLocal[k] = v;
+        }
+        records = Object.assign({}, cleanLocal, normalized);
         localStorage.setItem(STORAGE_KEY, JSON.stringify(records));
       }
     }
@@ -1142,17 +1155,35 @@ async function fetchAllRecords() {
 function normalizeDate(k) {
   if (!k) return null;
   const s = String(k).trim();
-  // 이미 YYYY-MM-DD 형식
+
+  // ① 이미 YYYY-MM-DD 형식
   if (/^\d{4}-\d{2}-\d{2}$/.test(s)) return s;
-  // Sheets 날짜 시리얼 숫자 (숫자만인 경우)
+
+  // ② Sheets 날짜 시리얼 숫자 (순수 숫자)
   if (/^\d+$/.test(s)) {
-    // Sheets epoch: 1899-12-30 기준
     const d = new Date((parseInt(s) - 25569) * 86400 * 1000);
     return formatDate(d);
   }
-  // 기타 날짜 문자열 시도
+
+  // ③ "Fri Mar 27 2026 00:00:00 GMT+0900..." 형식 — 앞 3단어에서 직접 파싱
+  const monthMap = {Jan:1,Feb:2,Mar:3,Apr:4,May:5,Jun:6,
+                    Jul:7,Aug:8,Sep:9,Oct:10,Nov:11,Dec:12};
+  const m3 = s.match(/([A-Za-z]{3})\s+(\d{1,2})\s+(\d{4})/);
+  if (m3) {
+    const mon = monthMap[m3[1]];
+    const day = parseInt(m3[2]);
+    const yr  = parseInt(m3[3]);
+    if (mon) return yr + '-' + String(mon).padStart(2,'0') + '-' + String(day).padStart(2,'0');
+  }
+
+  // ④ 기타 날짜 문자열 — new Date로 시도하되 로컬 날짜 강제 추출
   const d = new Date(s);
-  if (!isNaN(d.getTime())) return formatDate(d);
+  if (!isNaN(d.getTime())) {
+    // UTC가 아닌 로컬 날짜로 추출
+    return d.getFullYear() + '-'
+      + String(d.getMonth()+1).padStart(2,'0') + '-'
+      + String(d.getDate()).padStart(2,'0');
+  }
   return null;
 }
 
@@ -1369,7 +1400,10 @@ function switchTab(name) {
 // ═══════════════════════════════════════════
 async function renderHistory() {
   await fetchAllRecords();
-  const sorted = Object.keys(records).sort().reverse();
+  // YYYY-MM-DD 형식 키만 사용 (오염된 키 방어)
+  const sorted = Object.keys(records)
+    .filter(k => /^\d{4}-\d{2}-\d{2}$/.test(k))
+    .sort().reverse();
   if (!sorted.length) return;
 
   // Stats
