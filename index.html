@@ -1109,14 +1109,16 @@ async function init() {
   document.getElementById('userName').value = settings.userName || '가히';
   document.getElementById('appsScriptCode').textContent = getAppsScriptCode();
 
-  // Sheets에서 전체 기록 fetch (설정된 경우)
-  await fetchAllRecords();
-
-  // 오늘 날짜 로드
+  // 오늘 날짜 먼저 로드 (로컬 데이터로 즉시 표시)
   loadRecord(todayKey);
-
-  // Weight diff listener
   updateWeightDiff();
+
+  // Sheets 동기화는 백그라운드로 (로딩 속도 개선)
+  if (settings.scriptUrl) {
+    fetchAllRecords().then(ok => {
+      if (ok) loadRecord(currentDateKey);
+    });
+  }
 }
 
 // ─────────────────────────────────────────────
@@ -1556,11 +1558,20 @@ async function saveSettings() {
 // APPS SCRIPT CODE
 // ═══════════════════════════════════════════
 function getAppsScriptCode() {
-  return `// ── 저장 (가히님 앱 → Sheets) ──────────────
+  return `// ════════════════════════════════════════════
+// ★ 설정: 스프레드시트 ID를 여기에 입력하세요
+// Sheets URL에서 /d/ 뒤 ~ /edit 앞 부분
+// 예: https://docs.google.com/spreadsheets/d/[여기]/edit
+var SPREADSHEET_ID = '';  // ← 여기에 ID 붙여넣기
+// ════════════════════════════════════════════
+
+// ── 저장 (가히님 앱 → Sheets) ──────────────
 function doPost(e) {
   try {
     var data = JSON.parse(e.postData.contents);
-    var ss = SpreadsheetApp.getActiveSpreadsheet();
+    var ss = SPREADSHEET_ID
+      ? SpreadsheetApp.openById(SPREADSHEET_ID)
+      : SpreadsheetApp.getActiveSpreadsheet();
     var sheet = ss.getSheetByName('기록')
                || ss.insertSheet('기록');
 
@@ -1624,7 +1635,9 @@ function doPost(e) {
 // ── 조회 (선생님 뷰 → Sheets) ──────────────
 function doGet(e) {
   try {
-    var ss = SpreadsheetApp.getActiveSpreadsheet();
+    var ss = SPREADSHEET_ID
+      ? SpreadsheetApp.openById(SPREADSHEET_ID)
+      : SpreadsheetApp.getActiveSpreadsheet();
     var sheet = ss.getSheetByName('기록');
     if (!sheet || sheet.getLastRow() <= 1) {
       return ContentService
