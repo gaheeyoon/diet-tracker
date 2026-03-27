@@ -1632,29 +1632,37 @@ function doGet(e) {
         .setMimeType(ContentService.MimeType.JSON);
     }
 
+    var tz = Session.getScriptTimeZone();
     var rows = sheet.getDataRange().getValues();
     var result = {};
     for (var i = 1; i < rows.length; i++) {
       var r = rows[i];
-      if (!r[0]) continue;
-      // 날짜 셀이 Date 객체인 경우 YYYY-MM-DD 문자열로 변환
-      var key = r[0];
-      if (key instanceof Date) {
-        key = Utilities.formatDate(key, Session.getScriptTimeZone(), 'yyyy-MM-dd');
-      } else {
-        key = String(key).trim();
+      if (!r[0] && r[0] !== 0) continue;
+
+      // 날짜를 YYYY-MM-DD 문자열로 변환 — 타입에 관계없이 처리
+      var key;
+      try {
+        key = Utilities.formatDate(new Date(r[0]), tz, 'yyyy-MM-dd');
+      } catch(dateErr) {
+        key = String(r[0]).trim();
       }
-      if (!key.match(/^\d{4}-\d{2}-\d{2}$/)) continue;
+      // YYYY-MM-DD 형식 아니면 skip
+      if (!key || !/^[0-9]{4}-[0-9]{2}-[0-9]{2}$/.test(key)) continue;
+
+      // weight: 숫자형으로 저장된 경우 처리
+      var w = r[2];
+      var weight = (w !== '' && w !== null && !isNaN(parseFloat(w))) ? parseFloat(w) : null;
+
       result[key] = {
-        weight: r[2] || null,
-        meal1:  r[3] === 'O',
-        meal2:  r[4] === 'O',
-        meal3:  r[5] === 'O',
-        meal4:  r[6] === 'O',
+        weight:   weight,
+        meal1:    r[3] === 'O',
+        meal2:    r[4] === 'O',
+        meal3:    r[5] === 'O',
+        meal4:    r[6] === 'O',
         exercise: r[7] === 'O',
-        water:  r[8] === 'O',
-        sleep:  r[9] || null,
-        memo:   r[10] || ''
+        water:    r[8] === 'O',
+        sleep:    r[9] || null,
+        memo:     r[10] || ''
       };
     }
 
