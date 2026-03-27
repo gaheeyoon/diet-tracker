@@ -1057,7 +1057,10 @@ const STORAGE_KEY = 'gahi_diet_records';
 const SETTINGS_KEY = 'gahi_diet_settings';
 
 let records = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
-let settings = JSON.parse(localStorage.getItem(SETTINGS_KEY) || '{"scriptUrl":"","userName":"가히"}');
+const DEFAULT_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzkZLrZrEyYpNFnnvYdxH0TG6TXu9m3gwqjZz8GxAfA-ghpDZB1DYgdpOASd6e_t7PO/exec';
+let settings = JSON.parse(localStorage.getItem(SETTINGS_KEY) || JSON.stringify({scriptUrl: DEFAULT_SCRIPT_URL, userName: '가히'}));
+// scriptUrl이 비어있으면 기본값 사용
+if (!settings.scriptUrl) settings.scriptUrl = DEFAULT_SCRIPT_URL;
 let weightChart = null;
 
 const today = new Date();
@@ -1105,7 +1108,7 @@ async function init() {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(records));
 
   // Settings UI
-  document.getElementById('scriptUrl').value = settings.scriptUrl || '';
+  document.getElementById('scriptUrl').value = settings.scriptUrl || DEFAULT_SCRIPT_URL;
   document.getElementById('userName').value = settings.userName || '가히';
   document.getElementById('appsScriptCode').textContent = getAppsScriptCode();
 
@@ -1258,11 +1261,13 @@ function loadRecord(dateKey) {
     if (rec.exercise) document.getElementById('check-exercise').classList.add('checked');
     if (typeof rec.waterCount === 'number') {
       waterCount = rec.waterCount;
+    } else if (typeof rec.water === 'number') {
+      waterCount = Math.round(rec.water / 500);
     } else if (typeof rec.water === 'string' && rec.water.includes('ml')) {
       const m = rec.water.match(/^(\d+)ml/);
       waterCount = m ? Math.round(parseInt(m[1]) / 500) : 0;
     } else {
-      waterCount = rec.water ? 4 : 0;
+      waterCount = 0;
     }
     updateWaterUI();
   }
@@ -1379,7 +1384,7 @@ async function saveRecord() {
         meal3: meal3 ? 'O' : 'X',
         meal4: meal4 ? 'O' : 'X',
         exercise: exercise ? 'O' : 'X',
-        water: waterCount * 500 + 'ml / 2000ml',
+        water: waterCount * 500,
         sleep: sleep || '',
         memo: memo
       };
@@ -1506,6 +1511,7 @@ async function renderHistory() {
         </div>
         <div class="progress-label">식단 ${doneMeals}/4 · ${r.exercise?'운동 ✓':'운동 ✗'} · 💧${(function(){
               if (typeof r.waterCount==='number') return r.waterCount*500;
+              if (typeof r.water==='number') return r.water;
               if (typeof r.water==='string' && r.water.includes('ml')) {
                 const m=r.water.match(/^(\d+)ml/); return m?parseInt(m[1]):0;
               }
@@ -1528,9 +1534,10 @@ function openDetail(key) {
     ['유산소 30분', r.exercise ? '완료' : '미실시', r.exercise],
     ['물 섭취', (function(){
       if (typeof r.waterCount === 'number') return (r.waterCount * 500) + 'ml / 2000ml';
+      if (typeof r.water === 'number') return r.water + 'ml / 2000ml';
       if (typeof r.water === 'string' && r.water.includes('ml')) return r.water;
       return '0ml / 2000ml';
-    })(), !!(r.waterCount > 0 || (typeof r.water === 'string' && r.water.includes('ml') && r.water !== '0ml / 2000ml'))],
+    })(), !!(r.waterCount > 0 || (typeof r.water === 'number' && r.water > 0))],
     ['수면', r.sleep ? r.sleep+'시간' : '미기록', !!r.sleep],
     ['메모', r.memo || '없음', true],
   ];
@@ -1615,7 +1622,7 @@ function doPost(e) {
       data.meal1 || 'X', data.meal2 || 'X',
       data.meal3 || 'X', data.meal4 || 'X',
       data.exercise || 'X',
-      data.water || '',
+      (typeof data.water === 'number' ? data.water : 0),
       data.sleep || '',
       data.memo || ''
     ];
@@ -1665,11 +1672,17 @@ function doGet(e) {
       if (!key || !/^\d{4}-\d{2}-\d{2}$/.test(key)) continue;
 
       var w = r[2];
-      var waterStr = String(r[8] || '');
-      // waterCount 역산: "1500ml / 2000ml" → 3
-      var wc = 0;
-      var wcMatch = waterStr.match(/^(\d+)ml/);
-      if (wcMatch) wc = Math.round(parseInt(wcMatch[1]) / 500);
+      // water: 숫자(신규) 또는 "Xml/2000ml"(구형) → 숫자 ml로 통일
+      var waterRaw = r[8];
+      var waterMl = 0;
+      if (typeof waterRaw === 'number' && !isNaN(waterRaw)) {
+        waterMl = waterRaw;
+      } else {
+        var waterStr = String(waterRaw || '');
+        var wcMatch = waterStr.match(/(\d+)/);
+        waterMl = wcMatch ? parseInt(wcMatch[1]) : 0;
+      }
+      var wc = Math.round(waterMl / 500);
 
       result[key] = {
         weight:     (w !== '' && !isNaN(parseFloat(w))) ? parseFloat(w) : null,
@@ -1678,7 +1691,7 @@ function doGet(e) {
         meal3:      r[5] === 'O',
         meal4:      r[6] === 'O',
         exercise:   r[7] === 'O',
-        water:      waterStr,
+        water:      waterMl,
         waterCount: wc,
         sleep:      r[9] || null,
         memo:       r[10] || ''
