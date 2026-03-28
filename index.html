@@ -1057,7 +1057,7 @@ const STORAGE_KEY = 'gahi_diet_records';
 const SETTINGS_KEY = 'gahi_diet_settings';
 
 let records = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
-const DEFAULT_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzkZLrZrEyYpNFnnvYdxH0TG6TXu9m3gwqjZz8GxAfA-ghpDZB1DYgdpOASd6e_t7PO/exec';
+const DEFAULT_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzSSszALp-hIpNaHyFSjl0fHbR_xtz_AUUCKMvGALQx5N5LQULhY_8ztJQBBUJAdbF6/exec';
 let settings = JSON.parse(localStorage.getItem(SETTINGS_KEY) || JSON.stringify({scriptUrl: DEFAULT_SCRIPT_URL, userName: '가히'}));
 // scriptUrl이 비어있거나 유효하지 않으면 기본값 사용
 if (!settings.scriptUrl || !settings.scriptUrl.includes('script.google.com')) {
