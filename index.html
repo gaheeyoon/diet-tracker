@@ -1119,8 +1119,20 @@ async function init() {
   loadRecord(todayKey);
   updateWeightDiff();
 
-  // Sheets 동기화는 백그라운드로 (로딩 속도 개선)
-  if (settings.scriptUrl) {
+  // 로컬 기록이 없으면 DEFAULT URL로 즉시 동기화 (첫 진입 or 새 기기)
+  const isEmptyRecords = Object.keys(records).length === 0;
+  if (isEmptyRecords && DEFAULT_SCRIPT_URL) {
+    // scriptUrl이 없으면 기본값으로 설정
+    if (!settings.scriptUrl) {
+      settings.scriptUrl = DEFAULT_SCRIPT_URL;
+      localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
+      document.getElementById('scriptUrl').value = DEFAULT_SCRIPT_URL;
+    }
+    fetchAllRecords().then(ok => {
+      if (ok) loadRecord(currentDateKey);
+    });
+  } else if (settings.scriptUrl) {
+    // 로컬 데이터가 있어도 백그라운드 동기화
     fetchAllRecords().then(ok => {
       if (ok) loadRecord(currentDateKey);
     });
