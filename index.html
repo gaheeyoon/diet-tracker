@@ -1119,22 +1119,25 @@ async function init() {
   loadRecord(todayKey);
   updateWeightDiff();
 
-  // 로컬 기록이 없으면 DEFAULT URL로 즉시 동기화 (첫 진입 or 새 기기)
-  const isEmptyRecords = Object.keys(records).length === 0;
-  if (isEmptyRecords && DEFAULT_SCRIPT_URL) {
-    // scriptUrl이 없으면 기본값으로 설정
+  // URL이 있으면 항상 백그라운드 동기화
+  // 로컬 기록이 없으면(첫 진입/새 기기) DEFAULT URL 사용 후 즉시 화면 갱신
+  const syncUrl = settings.scriptUrl || DEFAULT_SCRIPT_URL;
+  if (syncUrl) {
+    // settings에 URL 없으면 기본값 저장
     if (!settings.scriptUrl) {
       settings.scriptUrl = DEFAULT_SCRIPT_URL;
       localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
       document.getElementById('scriptUrl').value = DEFAULT_SCRIPT_URL;
     }
+    const isEmptyRecords = Object.keys(records).length === 0;
     fetchAllRecords().then(ok => {
-      if (ok) loadRecord(currentDateKey);
-    });
-  } else if (settings.scriptUrl) {
-    // 로컬 데이터가 있어도 백그라운드 동기화
-    fetchAllRecords().then(ok => {
-      if (ok) loadRecord(currentDateKey);
+      // 비어있었으면 fetch 후 무조건 화면 갱신 (토스트 표시)
+      if (ok && isEmptyRecords) {
+        loadRecord(currentDateKey);
+        showToast('✅ 데이터 불러오기 완료! (' + Object.keys(records).length + '일 기록)');
+      } else if (ok) {
+        loadRecord(currentDateKey);
+      }
     });
   }
 }
